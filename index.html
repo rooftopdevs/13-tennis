@@ -55,17 +55,8 @@
 
             <!-- Action Buttons -->
             <div class="flex flex-wrap gap-3 mt-4 no-print">
-                <button onclick="resetLeague()" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg transition">
+                <button onclick="showPlayerInputModal()" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg transition">
                     리그 초기화
-                </button>
-                <button onclick="exportData()" class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg transition">
-                    데이터 내보내기
-                </button>
-                <button onclick="importData()" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg transition">
-                    데이터 가져오기
-                </button>
-                <button onclick="window.print()" class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg transition">
-                    일정표 인쇄
                 </button>
             </div>
         </div>
@@ -156,56 +147,128 @@
         <div id="content-input" class="content-section hidden">
             <div class="bg-white rounded-lg shadow-lg p-6">
                 <h2 class="text-2xl font-bold mb-4">경기 결과 입력</h2>
-                <div class="max-w-2xl">
-                    <div class="mb-4">
-                        <label class="block text-sm font-medium text-gray-700 mb-2">경기 선택:</label>
-                        <select id="match-select" onchange="updateMatchDisplay()" class="border border-gray-300 rounded-lg px-4 py-2 w-full">
-                            <option value="">-- 경기를 선택하세요 --</option>
-                        </select>
-                    </div>
 
-                    <div id="match-input-form" class="hidden">
-                        <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
-                            <div class="font-semibold mb-2">경기 상세:</div>
-                            <div id="match-display" class="text-sm"></div>
-                        </div>
-
-                        <div class="mb-4">
-                            <label class="block text-sm font-medium text-gray-700 mb-2">승자:</label>
-                            <div class="space-y-2">
-                                <label class="flex items-center">
-                                    <input type="radio" name="winner" value="team1" class="mr-2">
-                                    <span id="team1-label"></span>
-                                </label>
-                                <label class="flex items-center">
-                                    <input type="radio" name="winner" value="team2" class="mr-2">
-                                    <span id="team2-label"></span>
-                                </label>
-                            </div>
-                        </div>
-
-                        <button onclick="submitMatchResult()" class="bg-blue-500 hover:bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold transition">
-                            결과 제출
-                        </button>
-                    </div>
+                <!-- Player Filter -->
+                <div class="mb-6">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">선수 선택:</label>
+                    <select id="input-player-filter" onchange="filterPendingMatches()" class="border border-gray-300 rounded-lg px-4 py-2 w-full max-w-md">
+                        <option value="">선수를 선택하세요</option>
+                    </select>
+                    <p class="text-sm text-gray-500 mt-2">선수를 선택하면 해당 선수의 모든 대기 중인 경기가 표시됩니다.</p>
                 </div>
+
+                <!-- Pending matches cards -->
+                <div id="pending-matches-container" class="space-y-3">
+                    <!-- Cards will be inserted here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Player Input Modal -->
+    <div id="player-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-white rounded-lg shadow-xl p-6 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+            <h2 class="text-2xl font-bold mb-4">선수 이름 입력</h2>
+            <p class="text-gray-600 mb-4">17명의 선수 이름을 입력하세요. 입력된 이름은 무작위로 배치되어 공정하게 매칭됩니다.</p>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-6">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">선수 1</label>
+                    <input type="text" id="player-1" class="border border-gray-300 rounded px-3 py-2 w-full" placeholder="이름 입력">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">선수 2</label>
+                    <input type="text" id="player-2" class="border border-gray-300 rounded px-3 py-2 w-full" placeholder="이름 입력">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">선수 3</label>
+                    <input type="text" id="player-3" class="border border-gray-300 rounded px-3 py-2 w-full" placeholder="이름 입력">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">선수 4</label>
+                    <input type="text" id="player-4" class="border border-gray-300 rounded px-3 py-2 w-full" placeholder="이름 입력">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">선수 5</label>
+                    <input type="text" id="player-5" class="border border-gray-300 rounded px-3 py-2 w-full" placeholder="이름 입력">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">선수 6</label>
+                    <input type="text" id="player-6" class="border border-gray-300 rounded px-3 py-2 w-full" placeholder="이름 입력">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">선수 7</label>
+                    <input type="text" id="player-7" class="border border-gray-300 rounded px-3 py-2 w-full" placeholder="이름 입력">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">선수 8</label>
+                    <input type="text" id="player-8" class="border border-gray-300 rounded px-3 py-2 w-full" placeholder="이름 입력">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">선수 9</label>
+                    <input type="text" id="player-9" class="border border-gray-300 rounded px-3 py-2 w-full" placeholder="이름 입력">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">선수 10</label>
+                    <input type="text" id="player-10" class="border border-gray-300 rounded px-3 py-2 w-full" placeholder="이름 입력">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">선수 11</label>
+                    <input type="text" id="player-11" class="border border-gray-300 rounded px-3 py-2 w-full" placeholder="이름 입력">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">선수 12</label>
+                    <input type="text" id="player-12" class="border border-gray-300 rounded px-3 py-2 w-full" placeholder="이름 입력">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">선수 13</label>
+                    <input type="text" id="player-13" class="border border-gray-300 rounded px-3 py-2 w-full" placeholder="이름 입력">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">선수 14</label>
+                    <input type="text" id="player-14" class="border border-gray-300 rounded px-3 py-2 w-full" placeholder="이름 입력">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">선수 15</label>
+                    <input type="text" id="player-15" class="border border-gray-300 rounded px-3 py-2 w-full" placeholder="이름 입력">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">선수 16</label>
+                    <input type="text" id="player-16" class="border border-gray-300 rounded px-3 py-2 w-full" placeholder="이름 입력">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">선수 17</label>
+                    <input type="text" id="player-17" class="border border-gray-300 rounded px-3 py-2 w-full" placeholder="이름 입력">
+                </div>
+            </div>
+
+            <div class="flex gap-3">
+                <button onclick="confirmResetLeague()" class="flex-1 bg-blue-500 hover:bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold transition">
+                    리그 시작
+                </button>
+                <button onclick="hidePlayerInputModal()" class="flex-1 bg-gray-500 hover:bg-gray-600 text-white px-6 py-3 rounded-lg font-semibold transition">
+                    취소
+                </button>
             </div>
         </div>
     </div>
 
     <script>
         // Constants
-        const PLAYERS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q'];
         const TOTAL_PLAYERS = 17;
         const TARGET_GAMES = 16;
         const MATCHES_PER_ROUND = 4;
         const TOTAL_MATCHES = 68;
 
+        // Default player names (can be overridden)
+        let PLAYERS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q'];
+
         // Global state
         let leagueData = {
             matches: [],
             results: {},
-            playerStats: {}
+            playerStats: {},
+            playerNames: [...PLAYERS] // Store original player names
         };
 
         let currentSort = { field: 'points', ascending: false };
@@ -341,11 +404,17 @@
                 roundMatches.forEach(match => {
                     const result = leagueData.results[match.id];
                     const statusClass = result ? (result.winner === 'team1' ? 'bg-green-50' : 'bg-red-50') : 'bg-white';
-                    const statusBadge = result
-                        ? `<span class="ml-2 px-2 py-1 text-xs font-semibold rounded ${result.winner === 'team1' ? 'bg-green-200 text-green-800' : 'bg-red-200 text-red-800'}">
-                             ${result.winner === 'team1' ? '팀1 승리' : '팀2 승리'}
-                           </span>`
-                        : '<span class="ml-2 px-2 py-1 text-xs font-semibold rounded bg-gray-200 text-gray-600">대기중</span>';
+
+                    let statusBadge = '';
+                    if (result) {
+                        const score1 = result.score1 || 0;
+                        const score2 = result.score2 || 0;
+                        statusBadge = `<span class="ml-2 px-3 py-1 text-sm font-bold rounded ${result.winner === 'team1' ? 'bg-green-200 text-green-800' : 'bg-red-200 text-red-800'}">
+                            ${score1} - ${score2}
+                        </span>`;
+                    } else {
+                        statusBadge = '<span class="ml-2 px-2 py-1 text-xs font-semibold rounded bg-gray-200 text-gray-600">대기중</span>';
+                    }
 
                     html += `
                         <div class="${statusClass} border border-gray-200 rounded-lg p-4">
@@ -661,67 +730,156 @@
         }
 
         function renderMatchInput() {
-            const select = document.getElementById('match-select');
-            select.innerHTML = '<option value="">-- 경기를 선택하세요 --</option>';
+            // Populate player filter
+            const playerFilter = document.getElementById('input-player-filter');
 
-            // Only show unplayed matches
-            leagueData.matches.forEach(match => {
-                if (!leagueData.results[match.id]) {
-                    select.innerHTML += `
-                        <option value="${match.id}">
-                            경기 #${match.id} - ${match.round}라운드: ${match.team1.join('&')} vs ${match.team2.join('&')}
-                        </option>
-                    `;
-                }
+            playerFilter.innerHTML = '<option value="">선수를 선택하세요</option>';
+            PLAYERS.forEach(player => {
+                playerFilter.innerHTML += `<option value="${player}">${player}</option>`;
             });
+
+            // Initial render
+            filterPendingMatches();
         }
 
-        function updateMatchDisplay() {
-            const matchId = parseInt(document.getElementById('match-select').value);
-            const form = document.getElementById('match-input-form');
+        function filterPendingMatches() {
+            const container = document.getElementById('pending-matches-container');
+            const playerFilter = document.getElementById('input-player-filter').value;
 
-            if (!matchId) {
-                form.classList.add('hidden');
+            let pendingMatches = leagueData.matches.filter(m => !leagueData.results[m.id]);
+
+            // Apply player filter - must select a player
+            if (!playerFilter) {
+                container.innerHTML = `
+                    <div class="text-center py-12 text-gray-500">
+                        <div class="text-4xl mb-4">👆</div>
+                        <div class="text-xl font-semibold">선수를 선택해주세요</div>
+                        <div class="text-sm mt-2">위의 드롭다운에서 선수를 선택하면 해당 선수의 경기가 표시됩니다.</div>
+                    </div>
+                `;
+                return;
+            }
+
+            pendingMatches = pendingMatches.filter(m =>
+                m.team1.includes(playerFilter) || m.team2.includes(playerFilter)
+            );
+
+            // Render cards
+            if (pendingMatches.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-12 text-gray-500">
+                        <div class="text-4xl mb-4">🎉</div>
+                        <div class="text-xl font-semibold">대기 중인 경기가 없습니다!</div>
+                        <div class="text-sm mt-2">모든 경기가 완료되었거나 필터 조건에 맞는 경기가 없습니다.</div>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = pendingMatches.map(match => `
+                <div class="border border-gray-200 rounded-lg p-4 hover:shadow-md transition">
+                    <div class="flex items-center justify-between mb-3">
+                        <div>
+                            <span class="inline-block bg-blue-100 text-blue-800 text-xs font-semibold px-2 py-1 rounded">
+                                ${match.round}라운드
+                            </span>
+                            <span class="text-gray-500 text-sm ml-2">경기 #${match.id}</span>
+                        </div>
+                        <span class="text-xs text-gray-500">휴식: ${match.resting}</span>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
+                        <div class="bg-blue-50 border-2 border-blue-200 rounded-lg p-3">
+                            <div class="text-xs text-blue-600 font-semibold mb-1">팀 1</div>
+                            <div class="text-lg font-bold text-blue-900">${match.team1.join(' & ')}</div>
+                        </div>
+                        <div class="bg-red-50 border-2 border-red-200 rounded-lg p-3">
+                            <div class="text-xs text-red-600 font-semibold mb-1">팀 2</div>
+                            <div class="text-lg font-bold text-red-900">${match.team2.join(' & ')}</div>
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">스코어 입력:</label>
+                        <div class="flex items-center gap-4">
+                            <div class="flex items-center gap-2">
+                                <span class="text-sm font-semibold text-blue-600">팀 1:</span>
+                                <input type="number" id="score-team1-${match.id}" min="0" max="99"
+                                       class="border border-gray-300 rounded px-3 py-2 w-20 text-center"
+                                       placeholder="0">
+                            </div>
+                            <span class="text-xl font-bold text-gray-400">-</span>
+                            <div class="flex items-center gap-2">
+                                <span class="text-sm font-semibold text-red-600">팀 2:</span>
+                                <input type="number" id="score-team2-${match.id}" min="0" max="99"
+                                       class="border border-gray-300 rounded px-3 py-2 w-20 text-center"
+                                       placeholder="0">
+                            </div>
+                        </div>
+                        <p class="text-xs text-gray-500 mt-2">* 동점은 입력할 수 없습니다. 반드시 승패가 있어야 합니다.</p>
+                    </div>
+
+                    <button onclick="submitScoreResult(${match.id})"
+                            class="w-full bg-green-500 hover:bg-green-600 text-white px-4 py-3 rounded-lg font-semibold transition">
+                        결과 제출
+                    </button>
+                </div>
+            `).join('');
+        }
+
+        function submitScoreResult(matchId) {
+            // Get scores
+            const score1Input = document.getElementById(`score-team1-${matchId}`);
+            const score2Input = document.getElementById(`score-team2-${matchId}`);
+
+            const score1 = parseInt(score1Input.value) || 0;
+            const score2 = parseInt(score2Input.value) || 0;
+
+            // Validation
+            if (score1 === 0 && score2 === 0) {
+                alert('스코어를 입력해주세요.');
+                return;
+            }
+
+            if (score1 === score2) {
+                alert('동점은 입력할 수 없습니다. 반드시 승패가 있어야 합니다.');
+                return;
+            }
+
+            if (score1 < 0 || score2 < 0) {
+                alert('스코어는 0 이상이어야 합니다.');
                 return;
             }
 
             const match = leagueData.matches.find(m => m.id === matchId);
             if (!match) return;
 
-            document.getElementById('match-display').innerHTML = `
-                <div><strong>${match.round}라운드</strong> - 경기 #${match.id}</div>
-                <div class="mt-2">팀1: <strong class="text-blue-600">${match.team1.join(' & ')}</strong></div>
-                <div>팀2: <strong class="text-red-600">${match.team2.join(' & ')}</strong></div>
-                <div class="text-gray-600">휴식: ${match.resting}</div>
-            `;
-
-            document.getElementById('team1-label').textContent = `팀1: ${match.team1.join(' & ')}`;
-            document.getElementById('team2-label').textContent = `팀2: ${match.team2.join(' & ')}`;
-
-            form.classList.remove('hidden');
-        }
-
-        function submitMatchResult() {
-            const matchId = parseInt(document.getElementById('match-select').value);
-            const winner = document.querySelector('input[name="winner"]:checked');
-
-            if (!matchId || !winner) {
-                alert('경기와 승자를 선택해주세요');
+            // Check if already submitted
+            if (leagueData.results[matchId]) {
+                alert('이미 결과가 입력된 경기입니다.');
                 return;
             }
 
-            const match = leagueData.matches.find(m => m.id === matchId);
-            if (!match) return;
+            // Determine winner
+            const winnerTeam = score1 > score2 ? 'team1' : 'team2';
 
-            // Record result
+            // Confirm submission
+            const winnerName = winnerTeam === 'team1' ? match.team1.join(' & ') : match.team2.join(' & ');
+            if (!confirm(`${winnerName} 팀이 ${score1}-${score2}로 승리했습니다.\n결과를 제출하시겠습니까?`)) {
+                return;
+            }
+
+            // Record result with score
             leagueData.results[matchId] = {
-                winner: winner.value,
+                winner: winnerTeam,
+                score1: score1,
+                score2: score2,
                 timestamp: new Date().toISOString()
             };
 
             // Update player stats
-            const winners = winner.value === 'team1' ? match.team1 : match.team2;
-            const losers = winner.value === 'team1' ? match.team2 : match.team1;
+            const winners = winnerTeam === 'team1' ? match.team1 : match.team2;
+            const losers = winnerTeam === 'team1' ? match.team2 : match.team1;
 
             winners.forEach(player => {
                 leagueData.playerStats[player].wins++;
@@ -767,12 +925,8 @@
             saveData();
             alert('경기 결과가 기록되었습니다!');
 
-            // Reset form
-            document.querySelector('input[name="winner"]:checked').checked = false;
-            document.getElementById('match-select').value = '';
-            document.getElementById('match-input-form').classList.add('hidden');
-
-            renderMatchInput();
+            // Refresh the match list
+            filterPendingMatches();
         }
 
         // Data persistence
@@ -784,6 +938,11 @@
             const saved = localStorage.getItem('tennisLeagueData');
             if (saved) {
                 leagueData = JSON.parse(saved);
+
+                // Restore PLAYERS array from saved data
+                if (leagueData.playerNames && leagueData.playerNames.length === 17) {
+                    PLAYERS = leagueData.playerNames;
+                }
             } else {
                 initializeLeague();
             }
@@ -796,42 +955,66 @@
             saveData();
         }
 
-        function resetLeague() {
-            if (confirm('리그 전체를 초기화하시겠습니까? 이 작업은 되돌릴 수 없습니다.')) {
-                initializeLeague();
-                location.reload();
+        // Modal functions
+        function showPlayerInputModal() {
+            document.getElementById('player-modal').classList.remove('hidden');
+
+            // Load saved player names if they exist
+            if (leagueData.playerNames) {
+                for (let i = 0; i < 17; i++) {
+                    const input = document.getElementById(`player-${i + 1}`);
+                    if (input) {
+                        input.value = leagueData.playerNames[i] || '';
+                    }
+                }
             }
         }
 
-        function exportData() {
-            const dataStr = JSON.stringify(leagueData, null, 2);
-            const dataBlob = new Blob([dataStr], { type: 'application/json' });
-            const url = URL.createObjectURL(dataBlob);
-            const link = document.createElement('a');
-            link.href = url;
-            link.download = `tennis-league-${new Date().toISOString().split('T')[0]}.json`;
-            link.click();
+        function hidePlayerInputModal() {
+            document.getElementById('player-modal').classList.remove('hidden');
+            document.getElementById('player-modal').classList.add('hidden');
         }
 
-        function importData() {
-            const input = document.createElement('input');
-            input.type = 'file';
-            input.accept = 'application/json';
-            input.onchange = (e) => {
-                const file = e.target.files[0];
-                const reader = new FileReader();
-                reader.onload = (event) => {
-                    try {
-                        leagueData = JSON.parse(event.target.result);
-                        saveData();
-                        location.reload();
-                    } catch (error) {
-                        alert('잘못된 파일 형식입니다');
-                    }
-                };
-                reader.readAsText(file);
-            };
-            input.click();
+        function confirmResetLeague() {
+            // Collect player names
+            const playerNames = [];
+            for (let i = 1; i <= 17; i++) {
+                const input = document.getElementById(`player-${i}`);
+                const name = input.value.trim();
+
+                if (!name) {
+                    alert(`선수 ${i}의 이름을 입력해주세요.`);
+                    input.focus();
+                    return;
+                }
+
+                playerNames.push(name);
+            }
+
+            // Check for duplicate names
+            const uniqueNames = new Set(playerNames);
+            if (uniqueNames.size !== 17) {
+                alert('중복된 이름이 있습니다. 각 선수는 고유한 이름을 가져야 합니다.');
+                return;
+            }
+
+            // Shuffle player names randomly (Fisher-Yates shuffle)
+            const shuffled = [...playerNames];
+            for (let i = shuffled.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+            }
+
+            // Update global PLAYERS array
+            PLAYERS = shuffled;
+            leagueData.playerNames = shuffled;
+
+            // Initialize league with new player names
+            initializeLeague();
+
+            // Hide modal and reload
+            hidePlayerInputModal();
+            location.reload();
         }
 
         // Initialize on load
