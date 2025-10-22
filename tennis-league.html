@@ -1,0 +1,857 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>테니스 리그 관리 시스템 - 17명 복식 리그</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @media print {
+            .no-print { display: none; }
+            .print-break { page-break-after: always; }
+        }
+
+        .tab-active {
+            border-bottom: 3px solid #3b82f6;
+            color: #3b82f6;
+            font-weight: 600;
+        }
+
+        .matrix-cell {
+            transition: all 0.2s;
+        }
+
+        .matrix-cell:hover {
+            transform: scale(1.1);
+            z-index: 10;
+        }
+
+        .sortable {
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .sortable:hover {
+            background-color: #f3f4f6;
+        }
+
+        .sort-arrow {
+            display: inline-block;
+            margin-left: 4px;
+            opacity: 0.3;
+        }
+
+        .sort-arrow.active {
+            opacity: 1;
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <div class="container mx-auto px-4 py-8 max-w-7xl">
+        <!-- Header -->
+        <div class="bg-white rounded-lg shadow-lg p-6 mb-6">
+            <h1 class="text-4xl font-bold text-gray-800 mb-2">🎾 테니스 리그 관리 시스템</h1>
+            <p class="text-gray-600">17명 복식 리그 • 68경기 • 17라운드 • 완벽 균등 분배</p>
+
+            <!-- Action Buttons -->
+            <div class="flex flex-wrap gap-3 mt-4 no-print">
+                <button onclick="resetLeague()" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg transition">
+                    리그 초기화
+                </button>
+                <button onclick="exportData()" class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg transition">
+                    데이터 내보내기
+                </button>
+                <button onclick="importData()" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg transition">
+                    데이터 가져오기
+                </button>
+                <button onclick="window.print()" class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg transition">
+                    일정표 인쇄
+                </button>
+            </div>
+        </div>
+
+        <!-- Navigation Tabs -->
+        <div class="bg-white rounded-lg shadow-lg mb-6 no-print">
+            <div class="flex flex-wrap border-b">
+                <button onclick="showTab('schedule')" id="tab-schedule" class="tab-active px-6 py-4 text-sm font-medium">
+                    경기 일정
+                </button>
+                <button onclick="showTab('standings')" id="tab-standings" class="px-6 py-4 text-sm font-medium text-gray-600 hover:text-gray-800">
+                    순위표
+                </button>
+                <button onclick="showTab('players')" id="tab-players" class="px-6 py-4 text-sm font-medium text-gray-600 hover:text-gray-800">
+                    선수 통계
+                </button>
+                <button onclick="showTab('matrix')" id="tab-matrix" class="px-6 py-4 text-sm font-medium text-gray-600 hover:text-gray-800">
+                    매치업 매트릭스
+                </button>
+                <button onclick="showTab('input')" id="tab-input" class="px-6 py-4 text-sm font-medium text-gray-600 hover:text-gray-800">
+                    결과 입력
+                </button>
+            </div>
+        </div>
+
+        <!-- Content Sections -->
+        <div id="content-schedule" class="content-section">
+            <div class="bg-white rounded-lg shadow-lg p-6">
+                <h2 class="text-2xl font-bold mb-4">경기 일정</h2>
+                <div class="mb-4 no-print">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">선수별 필터:</label>
+                    <select id="player-filter" onchange="renderSchedule()" class="border border-gray-300 rounded-lg px-4 py-2 w-full max-w-xs">
+                        <option value="">전체 경기</option>
+                    </select>
+                </div>
+                <div id="schedule-container"></div>
+            </div>
+        </div>
+
+        <div id="content-standings" class="content-section hidden">
+            <div class="bg-white rounded-lg shadow-lg p-6">
+                <h2 class="text-2xl font-bold mb-4">실시간 순위표</h2>
+                <div class="overflow-x-auto">
+                    <table class="w-full" id="standings-table">
+                        <thead class="bg-gray-100">
+                            <tr>
+                                <th class="px-4 py-3 text-left sortable" onclick="sortStandings('rank')">순위 <span class="sort-arrow">▼</span></th>
+                                <th class="px-4 py-3 text-left sortable" onclick="sortStandings('player')">선수 <span class="sort-arrow">▼</span></th>
+                                <th class="px-4 py-3 text-center sortable" onclick="sortStandings('played')">경기수 <span class="sort-arrow">▼</span></th>
+                                <th class="px-4 py-3 text-center sortable" onclick="sortStandings('wins')">승 <span class="sort-arrow">▼</span></th>
+                                <th class="px-4 py-3 text-center sortable" onclick="sortStandings('losses')">패 <span class="sort-arrow">▼</span></th>
+                                <th class="px-4 py-3 text-center sortable" onclick="sortStandings('points')">점수 <span class="sort-arrow active">▼</span></th>
+                                <th class="px-4 py-3 text-center sortable" onclick="sortStandings('winrate')">승률 <span class="sort-arrow">▼</span></th>
+                            </tr>
+                        </thead>
+                        <tbody id="standings-body"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div id="content-players" class="content-section hidden">
+            <div class="bg-white rounded-lg shadow-lg p-6">
+                <h2 class="text-2xl font-bold mb-4">선수 통계</h2>
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">선수 선택:</label>
+                    <select id="player-select" onchange="renderPlayerStats()" class="border border-gray-300 rounded-lg px-4 py-2 w-full max-w-xs">
+                    </select>
+                </div>
+                <div id="player-stats-container"></div>
+            </div>
+        </div>
+
+        <div id="content-matrix" class="content-section hidden">
+            <div class="bg-white rounded-lg shadow-lg p-6">
+                <h2 class="text-2xl font-bold mb-4">매치업 매트릭스</h2>
+                <div class="mb-4 text-sm">
+                    <span class="inline-block w-4 h-4 bg-green-500 mr-2"></span> 파트너로 플레이
+                    <span class="inline-block w-4 h-4 bg-red-500 ml-4 mr-2"></span> 상대로 플레이
+                    <span class="inline-block w-4 h-4 bg-gray-200 ml-4 mr-2"></span> 아직 매치 없음
+                </div>
+                <div class="overflow-x-auto">
+                    <div id="matrix-container"></div>
+                </div>
+            </div>
+        </div>
+
+        <div id="content-input" class="content-section hidden">
+            <div class="bg-white rounded-lg shadow-lg p-6">
+                <h2 class="text-2xl font-bold mb-4">경기 결과 입력</h2>
+                <div class="max-w-2xl">
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">경기 선택:</label>
+                        <select id="match-select" onchange="updateMatchDisplay()" class="border border-gray-300 rounded-lg px-4 py-2 w-full">
+                            <option value="">-- 경기를 선택하세요 --</option>
+                        </select>
+                    </div>
+
+                    <div id="match-input-form" class="hidden">
+                        <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+                            <div class="font-semibold mb-2">경기 상세:</div>
+                            <div id="match-display" class="text-sm"></div>
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">승자:</label>
+                            <div class="space-y-2">
+                                <label class="flex items-center">
+                                    <input type="radio" name="winner" value="team1" class="mr-2">
+                                    <span id="team1-label"></span>
+                                </label>
+                                <label class="flex items-center">
+                                    <input type="radio" name="winner" value="team2" class="mr-2">
+                                    <span id="team2-label"></span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <button onclick="submitMatchResult()" class="bg-blue-500 hover:bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold transition">
+                            결과 제출
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Constants
+        const PLAYERS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q'];
+        const TOTAL_PLAYERS = 17;
+        const TARGET_GAMES = 16;
+        const MATCHES_PER_ROUND = 4;
+        const TOTAL_MATCHES = 68;
+
+        // Global state
+        let leagueData = {
+            matches: [],
+            results: {},
+            playerStats: {}
+        };
+
+        let currentSort = { field: 'points', ascending: false };
+
+        // Initialize player stats
+        function initializePlayerStats() {
+            leagueData.playerStats = {};
+            PLAYERS.forEach(player => {
+                leagueData.playerStats[player] = {
+                    wins: 0,
+                    losses: 0,
+                    points: 0,
+                    partners: {},
+                    opponents: {},
+                    matchesPlayed: 0,
+                    restsUsed: 0
+                };
+            });
+        }
+
+        // Z-Cyclic Whist Algorithm for 17 players (Extended to 17 rounds)
+        // Based on cyclic group theory for prime modulus
+        // Guarantees: Each player partners with every other player exactly once (136 partnerships)
+        //            Each player opposes every other player exactly twice
+        function generateMatches() {
+            const matches = [];
+            let matchId = 1;
+
+            // Base round configuration (proven to work with cyclic rotation)
+            // This is a carefully constructed starting position
+            const baseRound = [
+                [[14, 15], [2, 4]],
+                [[5, 8], [13, 7]],
+                [[12, 16], [9, 1]],
+                [[6, 11], [10, 3]]
+            ];
+
+            // Convert player letters to indices (A=0, B=1, ..., Q=16)
+            const playerToIndex = (player) => PLAYERS.indexOf(player);
+            const indexToPlayer = (index) => PLAYERS[index];
+
+            // Generate 17 rounds using cyclic rotation
+            for (let round = 0; round < 17; round++) {
+                const roundMatches = [];
+
+                // Player 0 sits in round 0, player 1 sits in round 1, etc.
+                const sittingIndex = round % 17;
+                const sittingPlayer = indexToPlayer(sittingIndex);
+
+                // Generate 4 matches by applying cyclic shift to base round
+                for (const [[a, b], [c, d]] of baseRound) {
+                    const p1 = (a + round) % 17;
+                    const p2 = (b + round) % 17;
+                    const p3 = (c + round) % 17;
+                    const p4 = (d + round) % 17;
+
+                    roundMatches.push({
+                        id: matchId++,
+                        round: round + 1,
+                        team1: [indexToPlayer(p1), indexToPlayer(p2)],
+                        team2: [indexToPlayer(p3), indexToPlayer(p4)],
+                        resting: sittingPlayer
+                    });
+                }
+
+                matches.push(...roundMatches);
+            }
+
+            return matches;
+        }
+
+        // UI Functions
+        function showTab(tabName) {
+            // Update tab styles
+            document.querySelectorAll('[id^="tab-"]').forEach(tab => {
+                tab.classList.remove('tab-active');
+                tab.classList.add('text-gray-600');
+            });
+            document.getElementById(`tab-${tabName}`).classList.add('tab-active');
+            document.getElementById(`tab-${tabName}`).classList.remove('text-gray-600');
+
+            // Show/hide content
+            document.querySelectorAll('[id^="content-"]').forEach(content => {
+                content.classList.add('hidden');
+            });
+            document.getElementById(`content-${tabName}`).classList.remove('hidden');
+
+            // Render content
+            switch(tabName) {
+                case 'schedule':
+                    renderSchedule();
+                    break;
+                case 'standings':
+                    renderStandings();
+                    break;
+                case 'players':
+                    renderPlayerStats();
+                    break;
+                case 'matrix':
+                    renderMatrix();
+                    break;
+                case 'input':
+                    renderMatchInput();
+                    break;
+            }
+        }
+
+        function renderSchedule() {
+            const container = document.getElementById('schedule-container');
+            const filterPlayer = document.getElementById('player-filter').value;
+
+            const filteredMatches = filterPlayer
+                ? leagueData.matches.filter(m =>
+                    m.team1.includes(filterPlayer) || m.team2.includes(filterPlayer))
+                : leagueData.matches;
+
+            // Group by round
+            const rounds = {};
+            filteredMatches.forEach(match => {
+                if (!rounds[match.round]) rounds[match.round] = [];
+                rounds[match.round].push(match);
+            });
+
+            let html = '';
+            Object.keys(rounds).sort((a, b) => a - b).forEach(roundNum => {
+                const roundMatches = rounds[roundNum];
+                html += `
+                    <div class="mb-6 border-l-4 border-blue-500 pl-4">
+                        <h3 class="text-xl font-bold text-gray-800 mb-3">${roundNum}라운드</h3>
+                        <div class="space-y-3">
+                `;
+
+                roundMatches.forEach(match => {
+                    const result = leagueData.results[match.id];
+                    const statusClass = result ? (result.winner === 'team1' ? 'bg-green-50' : 'bg-red-50') : 'bg-white';
+                    const statusBadge = result
+                        ? `<span class="ml-2 px-2 py-1 text-xs font-semibold rounded ${result.winner === 'team1' ? 'bg-green-200 text-green-800' : 'bg-red-200 text-red-800'}">
+                             ${result.winner === 'team1' ? '팀1 승리' : '팀2 승리'}
+                           </span>`
+                        : '<span class="ml-2 px-2 py-1 text-xs font-semibold rounded bg-gray-200 text-gray-600">대기중</span>';
+
+                    html += `
+                        <div class="${statusClass} border border-gray-200 rounded-lg p-4">
+                            <div class="flex items-center justify-between flex-wrap gap-2">
+                                <div class="text-sm text-gray-600">경기 #${match.id}</div>
+                                ${statusBadge}
+                            </div>
+                            <div class="mt-2 text-lg">
+                                <span class="font-semibold text-blue-600">${match.team1.join(' & ')}</span>
+                                <span class="text-gray-400 mx-3">vs</span>
+                                <span class="font-semibold text-red-600">${match.team2.join(' & ')}</span>
+                            </div>
+                            <div class="mt-1 text-sm text-gray-500">휴식: ${match.resting}</div>
+                        </div>
+                    `;
+                });
+
+                html += `
+                        </div>
+                    </div>
+                `;
+            });
+
+            container.innerHTML = html;
+        }
+
+        function calculateStandings() {
+            const standings = PLAYERS.map(player => {
+                const stats = leagueData.playerStats[player];
+                return {
+                    player: player,
+                    played: stats.matchesPlayed,
+                    wins: stats.wins,
+                    losses: stats.losses,
+                    points: stats.points,
+                    winrate: stats.matchesPlayed > 0 ? (stats.wins / stats.matchesPlayed * 100).toFixed(1) : 0
+                };
+            });
+
+            return standings.sort((a, b) => b.points - a.points || b.wins - a.wins);
+        }
+
+        function sortStandings(field) {
+            if (currentSort.field === field) {
+                currentSort.ascending = !currentSort.ascending;
+            } else {
+                currentSort.field = field;
+                currentSort.ascending = false;
+            }
+            renderStandings();
+        }
+
+        function renderStandings() {
+            const tbody = document.getElementById('standings-body');
+            let standings = calculateStandings();
+
+            // Apply sorting
+            standings.sort((a, b) => {
+                let aVal, bVal;
+                switch(currentSort.field) {
+                    case 'rank':
+                        return currentSort.ascending ? 1 : -1;
+                    case 'player':
+                        aVal = a.player;
+                        bVal = b.player;
+                        break;
+                    case 'played':
+                        aVal = a.played;
+                        bVal = b.played;
+                        break;
+                    case 'wins':
+                        aVal = a.wins;
+                        bVal = b.wins;
+                        break;
+                    case 'losses':
+                        aVal = a.losses;
+                        bVal = b.losses;
+                        break;
+                    case 'points':
+                        aVal = a.points;
+                        bVal = b.points;
+                        break;
+                    case 'winrate':
+                        aVal = parseFloat(a.winrate);
+                        bVal = parseFloat(b.winrate);
+                        break;
+                    default:
+                        aVal = a.points;
+                        bVal = b.points;
+                }
+
+                if (typeof aVal === 'string') {
+                    return currentSort.ascending ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal);
+                } else {
+                    return currentSort.ascending ? aVal - bVal : bVal - aVal;
+                }
+            });
+
+            // Update sort arrows
+            document.querySelectorAll('.sort-arrow').forEach(arrow => arrow.classList.remove('active'));
+            const sortHeader = document.querySelector(`th[onclick="sortStandings('${currentSort.field}')"] .sort-arrow`);
+            if (sortHeader) {
+                sortHeader.classList.add('active');
+                sortHeader.textContent = currentSort.ascending ? '▲' : '▼';
+            }
+
+            let html = '';
+            standings.forEach((s, index) => {
+                const rankClass = index === 0 ? 'bg-yellow-100' : index < 3 ? 'bg-blue-50' : '';
+                html += `
+                    <tr class="${rankClass} border-b hover:bg-gray-50">
+                        <td class="px-4 py-3 font-semibold">${index + 1}</td>
+                        <td class="px-4 py-3 font-bold text-blue-600">${s.player}</td>
+                        <td class="px-4 py-3 text-center">${s.played}</td>
+                        <td class="px-4 py-3 text-center text-green-600 font-semibold">${s.wins}</td>
+                        <td class="px-4 py-3 text-center text-red-600">${s.losses}</td>
+                        <td class="px-4 py-3 text-center font-bold text-lg">${s.points}</td>
+                        <td class="px-4 py-3 text-center">${s.winrate}%</td>
+                    </tr>
+                `;
+            });
+
+            tbody.innerHTML = html;
+        }
+
+        function renderPlayerStats() {
+            const select = document.getElementById('player-select');
+            const selectedPlayer = select.value;
+
+            if (!selectedPlayer) return;
+
+            const container = document.getElementById('player-stats-container');
+            const stats = leagueData.playerStats[selectedPlayer];
+
+            // Get match history
+            const matchHistory = leagueData.matches
+                .filter(m => m.team1.includes(selectedPlayer) || m.team2.includes(selectedPlayer))
+                .map(m => {
+                    const result = leagueData.results[m.id];
+                    const isTeam1 = m.team1.includes(selectedPlayer);
+                    const partner = isTeam1 ? m.team1.find(p => p !== selectedPlayer) : m.team2.find(p => p !== selectedPlayer);
+                    const opponents = isTeam1 ? m.team2 : m.team1;
+                    const won = result ? (isTeam1 ? result.winner === 'team1' : result.winner === 'team2') : null;
+
+                    return {
+                        matchId: m.id,
+                        round: m.round,
+                        partner: partner,
+                        opponents: opponents,
+                        result: result ? (won ? 'Won' : 'Lost') : 'Pending'
+                    };
+                });
+
+            // Partnership stats
+            const partnerStats = Object.entries(stats.partners)
+                .map(([partner, count]) => ({ partner, count }))
+                .sort((a, b) => b.count - a.count);
+
+            // Opposition stats
+            const opponentStats = Object.entries(stats.opponents)
+                .map(([opponent, count]) => ({ opponent, count }))
+                .sort((a, b) => b.count - a.count);
+
+            let html = `
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                    <div class="bg-blue-100 rounded-lg p-4">
+                        <div class="text-sm text-blue-600 font-semibold">총 경기수</div>
+                        <div class="text-3xl font-bold text-blue-900">${stats.matchesPlayed}</div>
+                    </div>
+                    <div class="bg-green-100 rounded-lg p-4">
+                        <div class="text-sm text-green-600 font-semibold">승리</div>
+                        <div class="text-3xl font-bold text-green-900">${stats.wins}</div>
+                    </div>
+                    <div class="bg-red-100 rounded-lg p-4">
+                        <div class="text-sm text-red-600 font-semibold">패배</div>
+                        <div class="text-3xl font-bold text-red-900">${stats.losses}</div>
+                    </div>
+                    <div class="bg-yellow-100 rounded-lg p-4">
+                        <div class="text-sm text-yellow-600 font-semibold">점수</div>
+                        <div class="text-3xl font-bold text-yellow-900">${stats.points}</div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+                    <div>
+                        <h3 class="text-lg font-bold mb-3">파트너 통계</h3>
+                        <div class="bg-gray-50 rounded-lg p-4">
+                            ${partnerStats.length > 0 ? partnerStats.map(p => `
+                                <div class="flex justify-between py-2 border-b border-gray-200 last:border-0">
+                                    <span class="font-semibold">선수 ${p.partner}</span>
+                                    <span class="text-gray-600">${p.count}회</span>
+                                </div>
+                            `).join('') : '<div class="text-gray-500">아직 파트너 기록이 없습니다</div>'}
+                        </div>
+                    </div>
+
+                    <div>
+                        <h3 class="text-lg font-bold mb-3">상대 통계</h3>
+                        <div class="bg-gray-50 rounded-lg p-4">
+                            ${opponentStats.length > 0 ? opponentStats.map(o => `
+                                <div class="flex justify-between py-2 border-b border-gray-200 last:border-0">
+                                    <span class="font-semibold">선수 ${o.opponent}</span>
+                                    <span class="text-gray-600">${o.count}회</span>
+                                </div>
+                            `).join('') : '<div class="text-gray-500">아직 상대 기록이 없습니다</div>'}
+                        </div>
+                    </div>
+                </div>
+
+                <div>
+                    <h3 class="text-lg font-bold mb-3">경기 기록</h3>
+                    <div class="space-y-2">
+                        ${matchHistory.map(m => `
+                            <div class="bg-white border border-gray-200 rounded-lg p-3 ${
+                                m.result === 'Won' ? 'border-l-4 border-l-green-500' :
+                                m.result === 'Lost' ? 'border-l-4 border-l-red-500' : ''
+                            }">
+                                <div class="flex justify-between items-center flex-wrap gap-2">
+                                    <div>
+                                        <span class="text-sm text-gray-600">경기 #${m.matchId} (${m.round}라운드)</span>
+                                        <div class="mt-1">
+                                            <span class="font-semibold">파트너: ${m.partner}</span>
+                                            <span class="text-gray-400 mx-2">vs</span>
+                                            <span class="font-semibold">${m.opponents.join(' & ')}</span>
+                                        </div>
+                                    </div>
+                                    <span class="px-3 py-1 rounded font-semibold ${
+                                        m.result === 'Won' ? 'bg-green-100 text-green-800' :
+                                        m.result === 'Lost' ? 'bg-red-100 text-red-800' :
+                                        'bg-gray-100 text-gray-600'
+                                    }">${m.result === 'Won' ? '승리' : m.result === 'Lost' ? '패배' : '대기중'}</span>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+
+            container.innerHTML = html;
+        }
+
+        function renderMatrix() {
+            const container = document.getElementById('matrix-container');
+
+            // Calculate partnership and opposition matrices
+            const partnerMatrix = {};
+            const opponentMatrix = {};
+
+            PLAYERS.forEach(p => {
+                partnerMatrix[p] = {};
+                opponentMatrix[p] = {};
+                PLAYERS.forEach(other => {
+                    partnerMatrix[p][other] = 0;
+                    opponentMatrix[p][other] = 0;
+                });
+            });
+
+            leagueData.matches.forEach(match => {
+                const [p1, p2] = match.team1;
+                const [p3, p4] = match.team2;
+
+                // Partnerships
+                partnerMatrix[p1][p2]++;
+                partnerMatrix[p2][p1]++;
+                partnerMatrix[p3][p4]++;
+                partnerMatrix[p4][p3]++;
+
+                // Oppositions
+                opponentMatrix[p1][p3]++; opponentMatrix[p3][p1]++;
+                opponentMatrix[p1][p4]++; opponentMatrix[p4][p1]++;
+                opponentMatrix[p2][p3]++; opponentMatrix[p3][p2]++;
+                opponentMatrix[p2][p4]++; opponentMatrix[p4][p2]++;
+            });
+
+            let html = '<table class="border-collapse">';
+
+            // Header
+            html += '<tr><th class="border border-gray-300 p-2 bg-gray-100 sticky top-0"></th>';
+            PLAYERS.forEach(p => {
+                html += `<th class="border border-gray-300 p-2 bg-gray-100 font-bold sticky top-0">${p}</th>`;
+            });
+            html += '</tr>';
+
+            // Rows
+            PLAYERS.forEach(row => {
+                html += `<tr><td class="border border-gray-300 p-2 bg-gray-100 font-bold">${row}</td>`;
+                PLAYERS.forEach(col => {
+                    if (row === col) {
+                        html += '<td class="border border-gray-300 p-2 bg-gray-400"></td>';
+                    } else {
+                        const partners = partnerMatrix[row][col];
+                        const opponents = opponentMatrix[row][col];
+
+                        let bgColor = 'bg-gray-200';
+                        let text = `P:${partners} O:${opponents}`;
+
+                        if (partners > 0 && opponents > 0) {
+                            bgColor = 'bg-purple-300';
+                        } else if (partners > 0) {
+                            bgColor = 'bg-green-300';
+                        } else if (opponents > 0) {
+                            bgColor = 'bg-red-300';
+                        }
+
+                        html += `<td class="border border-gray-300 p-2 text-center text-sm matrix-cell ${bgColor}" title="${row}-${col}: ${partners} partnerships, ${opponents} oppositions">${text}</td>`;
+                    }
+                });
+                html += '</tr>';
+            });
+
+            html += '</table>';
+            container.innerHTML = html;
+        }
+
+        function renderMatchInput() {
+            const select = document.getElementById('match-select');
+            select.innerHTML = '<option value="">-- 경기를 선택하세요 --</option>';
+
+            // Only show unplayed matches
+            leagueData.matches.forEach(match => {
+                if (!leagueData.results[match.id]) {
+                    select.innerHTML += `
+                        <option value="${match.id}">
+                            경기 #${match.id} - ${match.round}라운드: ${match.team1.join('&')} vs ${match.team2.join('&')}
+                        </option>
+                    `;
+                }
+            });
+        }
+
+        function updateMatchDisplay() {
+            const matchId = parseInt(document.getElementById('match-select').value);
+            const form = document.getElementById('match-input-form');
+
+            if (!matchId) {
+                form.classList.add('hidden');
+                return;
+            }
+
+            const match = leagueData.matches.find(m => m.id === matchId);
+            if (!match) return;
+
+            document.getElementById('match-display').innerHTML = `
+                <div><strong>${match.round}라운드</strong> - 경기 #${match.id}</div>
+                <div class="mt-2">팀1: <strong class="text-blue-600">${match.team1.join(' & ')}</strong></div>
+                <div>팀2: <strong class="text-red-600">${match.team2.join(' & ')}</strong></div>
+                <div class="text-gray-600">휴식: ${match.resting}</div>
+            `;
+
+            document.getElementById('team1-label').textContent = `팀1: ${match.team1.join(' & ')}`;
+            document.getElementById('team2-label').textContent = `팀2: ${match.team2.join(' & ')}`;
+
+            form.classList.remove('hidden');
+        }
+
+        function submitMatchResult() {
+            const matchId = parseInt(document.getElementById('match-select').value);
+            const winner = document.querySelector('input[name="winner"]:checked');
+
+            if (!matchId || !winner) {
+                alert('경기와 승자를 선택해주세요');
+                return;
+            }
+
+            const match = leagueData.matches.find(m => m.id === matchId);
+            if (!match) return;
+
+            // Record result
+            leagueData.results[matchId] = {
+                winner: winner.value,
+                timestamp: new Date().toISOString()
+            };
+
+            // Update player stats
+            const winners = winner.value === 'team1' ? match.team1 : match.team2;
+            const losers = winner.value === 'team1' ? match.team2 : match.team1;
+
+            winners.forEach(player => {
+                leagueData.playerStats[player].wins++;
+                leagueData.playerStats[player].points += 2;
+                leagueData.playerStats[player].matchesPlayed++;
+
+                // Update partner stats
+                const partner = winners.find(p => p !== player);
+                if (!leagueData.playerStats[player].partners[partner]) {
+                    leagueData.playerStats[player].partners[partner] = 0;
+                }
+                leagueData.playerStats[player].partners[partner]++;
+
+                // Update opponent stats
+                losers.forEach(opponent => {
+                    if (!leagueData.playerStats[player].opponents[opponent]) {
+                        leagueData.playerStats[player].opponents[opponent] = 0;
+                    }
+                    leagueData.playerStats[player].opponents[opponent]++;
+                });
+            });
+
+            losers.forEach(player => {
+                leagueData.playerStats[player].losses++;
+                leagueData.playerStats[player].matchesPlayed++;
+
+                // Update partner stats
+                const partner = losers.find(p => p !== player);
+                if (!leagueData.playerStats[player].partners[partner]) {
+                    leagueData.playerStats[player].partners[partner] = 0;
+                }
+                leagueData.playerStats[player].partners[partner]++;
+
+                // Update opponent stats
+                winners.forEach(opponent => {
+                    if (!leagueData.playerStats[player].opponents[opponent]) {
+                        leagueData.playerStats[player].opponents[opponent] = 0;
+                    }
+                    leagueData.playerStats[player].opponents[opponent]++;
+                });
+            });
+
+            saveData();
+            alert('경기 결과가 기록되었습니다!');
+
+            // Reset form
+            document.querySelector('input[name="winner"]:checked').checked = false;
+            document.getElementById('match-select').value = '';
+            document.getElementById('match-input-form').classList.add('hidden');
+
+            renderMatchInput();
+        }
+
+        // Data persistence
+        function saveData() {
+            localStorage.setItem('tennisLeagueData', JSON.stringify(leagueData));
+        }
+
+        function loadData() {
+            const saved = localStorage.getItem('tennisLeagueData');
+            if (saved) {
+                leagueData = JSON.parse(saved);
+            } else {
+                initializeLeague();
+            }
+        }
+
+        function initializeLeague() {
+            initializePlayerStats();
+            leagueData.matches = generateMatches();
+            leagueData.results = {};
+            saveData();
+        }
+
+        function resetLeague() {
+            if (confirm('리그 전체를 초기화하시겠습니까? 이 작업은 되돌릴 수 없습니다.')) {
+                initializeLeague();
+                location.reload();
+            }
+        }
+
+        function exportData() {
+            const dataStr = JSON.stringify(leagueData, null, 2);
+            const dataBlob = new Blob([dataStr], { type: 'application/json' });
+            const url = URL.createObjectURL(dataBlob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `tennis-league-${new Date().toISOString().split('T')[0]}.json`;
+            link.click();
+        }
+
+        function importData() {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = 'application/json';
+            input.onchange = (e) => {
+                const file = e.target.files[0];
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    try {
+                        leagueData = JSON.parse(event.target.result);
+                        saveData();
+                        location.reload();
+                    } catch (error) {
+                        alert('잘못된 파일 형식입니다');
+                    }
+                };
+                reader.readAsText(file);
+            };
+            input.click();
+        }
+
+        // Initialize on load
+        document.addEventListener('DOMContentLoaded', () => {
+            loadData();
+
+            // Populate dropdowns
+            const playerFilter = document.getElementById('player-filter');
+            const playerSelect = document.getElementById('player-select');
+
+            PLAYERS.forEach(player => {
+                playerFilter.innerHTML += `<option value="${player}">선수 ${player}</option>`;
+                playerSelect.innerHTML += `<option value="${player}">선수 ${player}</option>`;
+            });
+
+            playerSelect.value = PLAYERS[0];
+
+            // Show initial tab
+            showTab('schedule');
+        });
+    </script>
+</body>
+</html>
